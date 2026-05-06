@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Ícone maskable: conteúdo significativo contido em círculo de ~40% de raio
+  conforme spec W3C de icon masks. Fundo full-bleed esmeralda; "K" central
+  em obsidiana com margem generosa para não ser recortado pelas máscaras
+  do sistema (círculo, squircle, rounded-rect).
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Kâmbio">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="#6ffbbe"/>
+      <stop offset="65%" stop-color="#4edea3"/>
+      <stop offset="100%" stop-color="#10b981"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <text x="256" y="340" text-anchor="middle"
+        font-family="Inter, 'Helvetica Neue', Arial, sans-serif"
+        font-weight="800" font-size="240" fill="#0b1f17"
+        letter-spacing="-6">K</text>
+</svg>

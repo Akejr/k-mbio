@@ -1,0 +1,181 @@
+/*
+ * CSS base do KwanzaProfit.
+ *
+ * Ordem dos imports:
+ *   1. `./fonts.css` — declara @font-face de Inter e Material Symbols
+ *      Outlined (auto-hospedados via @fontsource/inter e material-symbols).
+ *      Importado ANTES das diretivas do Tailwind para garantir que as
+ *      font-faces estejam disponíveis quando `font-family` resolver nas
+ *      camadas base/utilities do Tailwind.
+ *   2. Diretivas do Tailwind (base/components/utilities) — expandidas pelo
+ *      PostCSS via `tailwindcss` (ver `postcss.config.js`).
+ *
+ * Requisitos cobertos:
+ *   - 9.1 tema dark mode institucional (tokens aplicados via Tailwind)
+ *   - 9.3 ícones Material Symbols Outlined com classe utilitária dedicada
+ *   - 9.6 suporte mobile-first a partir de 320px + safe-area em iOS
+ */
+@import './fonts.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /*
+   * `100dvh` acompanha dinamicamente o viewport real em mobile (leva em conta
+   * a barra de endereços colapsável). Evita que o layout "salte" ao rolar em
+   * iOS/Android. Fallback implícito de `100vh` é suficiente para navegadores
+   * legados, que não são alvo deste PWA.
+   */
+  html,
+  body {
+    min-height: 100dvh;
+  }
+
+  html {
+    /*
+     * Fundo em gradiente sutil obsidiana → verde-escuro para dar profundidade
+     * institucional à página inteira. Ficha atrás do conteúdo; cada card
+     * continua com seu próprio bg para manter contraste.
+     */
+    background:
+      radial-gradient(1200px 800px at 85% -10%, rgba(78, 222, 163, 0.08), transparent 60%),
+      radial-gradient(900px 600px at -10% 110%, rgba(16, 185, 129, 0.06), transparent 60%),
+      #101415;
+  }
+
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Focus ring acessível e esteticamente coerente com o primary. */
+  *:focus-visible {
+    outline: 2px solid #4edea3;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Scrollbar fino no estilo "trading desk". */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(78, 222, 163, 0.18);
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(78, 222, 163, 0.35);
+  }
+}
+
+@layer components {
+  /*
+   * Classe canônica para ícones Material Symbols Outlined.
+   *
+   * O pacote `material-symbols` entrega a font-face via `fonts.css`; aqui só
+   * garantimos a renderização correta do glifo (ligatures, font-variation-
+   * -settings e antialias). Uso típico:
+   *
+   *   <span class="material-symbols-outlined">dashboard</span>
+   *
+   * O modifier `.filled` troca o eixo FILL de 0 para 1, espelhando o toggle
+   * "Outlined ↔ Filled" do Material Design.
+   */
+  .material-symbols-outlined {
+    font-family: 'Material Symbols Outlined';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    font-variation-settings:
+      'FILL' 0,
+      'wght' 400,
+      'GRAD' 0,
+      'opsz' 24;
+    -webkit-font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+    transition: font-variation-settings 180ms ease, color 180ms ease, transform 180ms ease;
+  }
+
+  .material-symbols-outlined.filled {
+    font-variation-settings:
+      'FILL' 1,
+      'wght' 500,
+      'GRAD' 0,
+      'opsz' 24;
+  }
+
+  /* Efeito shimmer reutilizável para hero/skeleton. */
+  .shimmer-overlay {
+    background: linear-gradient(
+      110deg,
+      transparent 20%,
+      rgba(255, 255, 255, 0.06) 50%,
+      transparent 80%
+    );
+    background-size: 400px 100%;
+    background-repeat: no-repeat;
+  }
+
+  /* Elevação/press-in consistente para botões e list items tocáveis. */
+  .press-scale {
+    transition:
+      transform 120ms ease,
+      box-shadow 180ms ease,
+      background-color 180ms ease;
+  }
+  .press-scale:hover {
+    transform: translateY(-1px);
+  }
+  .press-scale:active {
+    transform: scale(0.97);
+  }
+}
+
+@layer utilities {
+  /*
+   * Utilitário para respeitar a safe-area inferior em iOS (home indicator).
+   * Usado na BottomNav para evitar que o conteúdo fique sob a barra gestual.
+   * Fallback de 0px é obrigatório para navegadores que não suportam env().
+   */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Espelha o delay de animação sem abrir um utilitário por valor. */
+  .anim-delay-60 { animation-delay: 60ms; }
+  .anim-delay-120 { animation-delay: 120ms; }
+  .anim-delay-180 { animation-delay: 180ms; }
+  .anim-delay-240 { animation-delay: 240ms; }
+  .anim-delay-320 { animation-delay: 320ms; }
+
+  /*
+   * `prefers-reduced-motion`: desabilita animações longas para usuários
+   * que preferem pouco movimento. Mantém `animate-fade-in` como transição
+   * rápida e neutraliza pulse/float/shimmer.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    .animate-slide-up,
+    .animate-slide-down,
+    .animate-scale-in,
+    .animate-pulse-glow,
+    .animate-shimmer,
+    .animate-float,
+    .animate-spin-slow {
+      animation: none !important;
+    }
+  }
+}

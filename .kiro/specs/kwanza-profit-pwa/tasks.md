@@ -1,0 +1,360 @@
+# Plano de Implementação — KwanzaProfit PWA
+
+## Visão Geral
+
+Este plano converte o design em uma sequência incremental de tarefas de codificação em **TypeScript + Vite**, construindo a aplicação de dentro para fora: primeiro o _scaffolding_ e os _tokens_ do Design System, depois o domínio puro (com PBT), a camada de infraestrutura (IndexedDB), a camada de aplicação (store/actions/router), a UI por componentes e, por fim, os recursos de PWA e testes e2e. Tasks opcionais ficam para o fim.
+
+Convenções:
+
+- Tarefas marcadas com `*` são **opcionais** (podem ser puladas para acelerar o MVP). Incluem testes de propriedade/unidade/integração e recursos dos Requisitos 10 e 11.
+- Cada sub-task referencia os requisitos (`_Requisitos: X.Y_`) e, quando aplicável, as propriedades do design (`_Propriedades: PN_`).
+- Cada teste baseado em propriedade (PBT) usa `fast-check` com mínimo de **100 iterações** e um comentário `Feature: kwanza-profit-pwa, Property N: <título>` imediatamente acima do `it(...)`.
+- Módulos seguem a estrutura de pastas do design (`src/domain`, `src/app`, `src/infra`, `src/ui`, `tests/`).
+
+## Tasks
+
+- [x] 1. Bootstrap do projeto (Vite + TypeScript)
+  - [x] 1.1 Inicializar `package.json`, `tsconfig.json` e `vite.config.ts`
+    - Criar `package.json` com scripts `dev`, `build`, `preview`, `test`, `test:run`, `lint`, `typecheck`
+    - Configurar `tsconfig.json` com `strict: true`, `target: ES2022`, `module: ESNext`, `moduleResolution: Bundler`, `noUncheckedIndexedAccess: true`, `paths` para `@domain/*`, `@app/*`, `@infra/*`, `@ui/*`
+    - Criar `vite.config.ts` com alias de paths espelhando `tsconfig` e `root: 'src'`, `build.outDir: '../dist'`
+    - Criar `src/index.html` minimalista com `<div id="app"></div>` e `<script type="module" src="./main.ts">`
+    - _Requisitos: 5.2, 7.1_
+  - [x] 1.2 Adicionar dependências de produção e desenvolvimento
+    - Instalar `idb`, `@fontsource/inter`
+    - Instalar dev deps: `typescript`, `vite`, `vite-plugin-pwa`, `tailwindcss`, `postcss`, `autoprefixer`, `vitest`, `fast-check`, `fake-indexeddb`, `@types/node`
+    - _Requisitos: 5.1, 6.2, 7.1_
+  - [x] 1.3 Configurar Vitest com ambiente `jsdom` e setup global
+    - Criar `vitest.config.ts` com `environment: 'jsdom'`, `setupFiles: ['tests/setup.ts']`, `include: ['tests/**/*.test.ts']`, `coverage.reporter: ['text','html']`
+    - Criar `tests/setup.ts` registrando `fake-indexeddb/auto` e `fc.configureGlobal({ numRuns: 100, seed: Number(process.env.FC_SEED) || undefined })`
+    - _Requisitos: 5.1, 12.1_
+
+- [x] 2. Design System: Tailwind, tokens, fontes e CSS base
+  - [x] 2.1 Configurar Tailwind com tokens do Design System
+    - Criar `tailwind.config.ts` replicando `colors`, `borderRadius`, `spacing`, `fontFamily` e `fontSize` exatamente como os mocks (`Design system/Dashboard/code.html`, `Design system/Cadastro/code.html`)
+    - Habilitar `darkMode: 'class'` e `content: ['./src/**/*.{ts,html}']`
+    - Criar `postcss.config.js` com `tailwindcss` e `autoprefixer`
+    - _Requisitos: 9.1, 9.2, 9.4, 9.5_
+  - [x] 2.2 Importar Inter e Material Symbols Outlined auto-hospedados
+    - Criar `src/styles/fonts.css` com `@fontsource/inter/latin-400.css`, `latin-500.css`, `latin-600.css`, `latin-700.css`
+    - Copiar os arquivos woff2 de Material Symbols Outlined para `public/fonts/` e declarar `@font-face` apontando para caminhos locais (sem Google Fonts)
+    - _Requisitos: 7.1, 9.2, 9.3_
+  - [x] 2.3 Criar CSS base e classes utilitárias para Material Symbols
+    - Criar `src/styles/index.css` com `@tailwind base; @tailwind components; @tailwind utilities;`
+    - Definir classe `.material-symbols-outlined` com `font-variation-settings` e `pb-safe` usando `env(safe-area-inset-bottom)`
+    - Aplicar `class="dark"` e `bg-background text-on-background` no `<html>/<body>` em `src/index.html`
+    - _Requisitos: 9.1, 9.3, 9.6_
+
+- [x] 3. Domínio: tipos de moeda e geração de identificador
+  - [x] 3.1 Implementar `domain/currency.ts`
+    - Exportar `CurrencyCode` (`'AOA' | 'USD' | 'EUR' | 'GBP' | 'ZAR'`) e `CurrencyMeta` conforme assinaturas do design
+    - Exportar `CURRENCY_META: Record<CurrencyCode, CurrencyMeta>` com símbolos, posições, separadores e `fractionDigits` (AOA = 0; demais = 2)
+    - Exportar `isForeignCurrency(c: unknown): c is Exclude<CurrencyCode,'AOA'>`
+    - _Requisitos: 1.2, 8.1, 8.2, 8.3, 8.4, 8.5_
+  - [x] 3.2 Implementar `domain/idGen.ts`
+    - Implementar `gerarIdTransacao(seq: number): string` com zero-padding mínimo de 4 (`TRX-<n>`)
+    - Implementar `parseSequencia(id: string): number | null` com regex `^TRX-(\d{4,})$`
+    - Garantir que `gerarIdTransacao` lança para `seq <= 0` ou não inteiro
+    - _Requisitos: 1.4_
+  - [ ]* 3.3 Escrever teste de propriedade para `idGen`
+    - **Propriedade 10 (parcial · geração): Ids únicos, monotônicos e bem-formados**
+    - Para `n ∈ [1,50]`, gerar `n` ids a partir de `seq` monotônico e assertar: todos casam `^TRX-\d{4,}$`, são distintos e `parseSequencia` é estritamente crescente
+    - Arquivo: `tests/properties/idGen.property.test.ts`
+    - _Requisitos: 1.4_ · _Propriedades: P10_
+
+- [x] 4. Domínio: entidade `Sale`, validação e (de)serialização
+  - [x] 4.1 Implementar `domain/sale.ts` — tipos e `validateSaleInput`
+    - Exportar interfaces `Sale`, `SaleInput`, `ValidationError` e tipo `AppError` conforme design
+    - Implementar `validateSaleInput(input, { allowNegativeProfit })` cobrindo todos os erros: `customerName` vazio/trim; `currency` ausente/não suportada; `amount` ≤ 0/NaN/Infinity/não-numérico; `profitAoa` NaN/Infinity/não-numérico/negativo quando `allowNegativeProfit=false`
+    - Retornar `{ ok: true, value }` com `customerName` _trim-ado_ e `amount`/`profitAoa` coeridos para `number`
+    - _Requisitos: 1.5, 1.6, 1.7, 1.8, 1.9_
+  - [x] 4.2 Implementar `serialize` e `deserialize` em `domain/sale.ts`
+    - `serialize(sale)` retorna um objeto JSON-safe com os mesmos campos
+    - `deserialize(raw)` valida cada campo e lança `CorruptedDataError` (definido em `infra/db/errors.ts`, mas já referenciado aqui) quando o registro não casa os invariantes
+    - _Requisitos: 5.4_
+  - [ ]* 4.3 Escrever teste de propriedade para validação de `SaleInput`
+    - **Propriedade 11: Validador rejeita toda entrada inválida**
+    - Gerar com `arbSaleInputInvalido` e assertar `ok === false` com pelo menos um erro; gerar com `arbSaleInputValido` e assertar `ok === true`
+    - Arquivo: `tests/properties/sale.property.test.ts`
+    - _Requisitos: 1.5, 1.6, 1.7, 1.8, 1.9, 12.7_ · _Propriedades: P11_
+  - [ ]* 4.4 Escrever teste de propriedade para round-trip de `serialize`/`deserialize`
+    - **Propriedade 7: Round-trip de serialização**
+    - Para toda `arbSale`, assertar `deepEqual(deserialize(serialize(v)), v)`
+    - _Requisitos: 5.4, 12.6_ · _Propriedades: P7_
+
+- [x] 5. Domínio: cálculo do Lucro_Total e ordenação
+  - [x] 5.1 Implementar `domain/profit.ts`
+    - `calcularLucroTotal(sales)` soma `profitAoa` apenas onde `deletedAt === null`
+    - Expor `somaIncremental(prev: number, sale: Sale): number` para uso do store
+    - _Requisitos: 2.2, 2.3, 2.4, 12.1_
+  - [x] 5.2 Implementar `domain/ordering.ts`
+    - `ordenarVendas(sales)` retorna cópia ordenada por `createdAt desc`, com desempate `id desc` (comparação lexicográfica, que coincide com numérica dado o zero-padding)
+    - _Requisitos: 3.3, 3.4, 12.4, 12.5_
+  - [x] 5.3 Criar arbitrários compartilhados em `tests/properties/generators.ts`
+    - Exportar `arbNomeCliente`, `arbMoedaEstrangeira`, `arbMoeda`, `arbQuantidade`, `arbLucroAoa`, `arbTimestamp`, `arbTimestampColisoes`, `arbSequencia`, `arbSale`, `arbListaVendas`, `arbSaleInputValido`, `arbSaleInputInvalido` exatamente como no design
+    - _Requisitos: 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7_
+  - [ ]* 5.4 Escrever teste de propriedade: invariante de soma
+    - **Propriedade 1: Invariante de soma do Lucro_Total**
+    - Arquivo: `tests/properties/profit.property.test.ts`
+    - _Requisitos: 2.2, 12.1_ · _Propriedades: P1_
+  - [ ]* 5.5 Escrever teste de propriedade: confluência (ordem não importa)
+    - **Propriedade 2: `calcularLucroTotal` é invariante a permutações**
+    - Gerar `arbListaVendas` e embaralhar com `fc.pre`/algoritmo Fisher-Yates parametrizado por arbitrário
+    - _Requisitos: 12.2_ · _Propriedades: P2_
+  - [ ]* 5.6 Escrever teste de propriedade: incremento metamórfico
+    - **Propriedade 3: `total(V ∪ {x}) − total(V) === x.profitAoa` (e simétrico para remoção)**
+    - _Requisitos: 2.3, 10.3, 12.3_ · _Propriedades: P3_
+  - [ ]* 5.7 Escrever teste de propriedade: idempotência da ordenação
+    - **Propriedade 4: `ordenar(ordenar(V)) === ordenar(V)`**
+    - Arquivo: `tests/properties/ordering.property.test.ts`
+    - _Requisitos: 12.4_ · _Propriedades: P4_
+  - [ ]* 5.8 Escrever teste de propriedade: preservação do multiset na ordenação
+    - **Propriedade 5: multiset de `ordenar(V)` é igual ao multiset de `V`**
+    - _Requisitos: 12.5_ · _Propriedades: P5_
+  - [ ]* 5.9 Escrever teste de propriedade: ordenação não-crescente com desempate por id desc
+    - **Propriedade 6: para todo par `R[i], R[i+1]` vale `createdAt` desc ou (empate) `id` desc**
+    - Usar `arbTimestampColisoes` para forçar empates
+    - _Requisitos: 3.3, 3.4_ · _Propriedades: P6_
+
+- [x] 6. Domínio: Formatador de Moeda
+  - [x] 6.1 Implementar `domain/formatter.ts — formatCurrency`
+    - Usar `Intl.NumberFormat` **apenas** para dígitos/agrupamento; montar símbolo, sinal e sufixo manualmente para respeitar as regras do Req 8 ao pé da letra
+    - AOA: `<n_formatado> AOA` sem casas decimais; separador de milhar `.`
+    - USD/EUR/GBP: `<símbolo><n>` com 2 casas; ZAR: `ZAR <n>` com 2 casas
+    - Negativos: prefixo `-` antes do símbolo; `opts.signed === true` adiciona `+` para positivos
+    - Zero não recebe `+` nem `-`
+    - _Requisitos: 2.5, 8.1, 8.2, 8.3, 8.4, 8.5, 8.7, 3.7_
+  - [x] 6.2 Implementar `domain/formatter.ts — parseCurrency`
+    - Parser tolerante: remove símbolo, sufixo e separadores de milhar; converte separador decimal para `.`; retorna `null` quando a string não casa o formato canônico produzido por `formatCurrency`
+    - _Requisitos: 8.6_
+  - [ ]* 6.3 Escrever testes de exemplo por moeda
+    - Tabela de casos: `1234567` AOA → `"1.234.567 AOA"`; `1234.5` USD → `"$1,234.50"`; `-10` EUR → `"-€10.00"`; etc.
+    - Arquivo: `tests/unit/formatter.test.ts`
+    - _Requisitos: 8.1, 8.2, 8.3, 8.4, 8.5, 8.7_
+  - [ ]* 6.4 Escrever teste de propriedade: forma estrutural por moeda
+    - **Propriedade 12: Forma estrutural do Formatador por moeda**
+    - Arquivo: `tests/properties/formatter.property.test.ts`
+    - _Requisitos: 2.5, 8.1, 8.2, 8.3, 8.4, 8.5_ · _Propriedades: P12_
+  - [ ]* 6.5 Escrever teste de propriedade: round-trip numérico
+    - **Propriedade 13: `|parseCurrency(formatCurrency(v, m), m) − v| ≤ 10⁻ᶠᵐ`**
+    - _Requisitos: 8.6_ · _Propriedades: P13_
+  - [ ]* 6.6 Escrever teste de propriedade: preservação de sinal
+    - **Propriedade 14: Preservação de sinal no Formatador**
+    - _Requisitos: 8.7, 3.7_ · _Propriedades: P14_
+
+- [x] 7. Checkpoint — todos os testes de domínio verdes
+  - Rodar `npm run test:run` e confirmar que todas as PBTs e testes unitários do domínio passam; se surgirem dúvidas de interpretação das propriedades, perguntar ao usuário.
+
+- [x] 8. Infraestrutura: IndexedDB e `SalesRepository`
+  - [x] 8.1 Definir schema e abrir o banco
+    - Criar `infra/db/schema.ts` com nome `kwanza-profit`, versão `1`, stores `sales` (keyPath `id`, índices `byCreatedAt`, `byDeletedAt`) e `meta` (keyPath `key`)
+    - Criar `infra/db/openDb.ts` usando `idb.openDB` com callback `upgrade` criando as stores/índices
+    - Criar `infra/db/errors.ts` com `QuotaExceededError`, `CorruptedDataError`, `StorageUnavailableError`
+    - _Requisitos: 5.1, 5.3, 5.6_
+  - [x] 8.2 Implementar `SalesRepository` sobre IndexedDB
+    - Criar `infra/salesRepository.ts` exportando a interface do design e a factory `createIndexedDbSalesRepository(db)`
+    - `putSale` em transação `readwrite` sobre `sales` (idempotente por `keyPath`)
+    - `getAll` varrendo `byCreatedAt` em ordem desc, filtrando por `deletedAt === null` e usando `deserialize`; registros corrompidos são excluídos do retorno e logados (não apagados)
+    - `getNextSequence` em transação sobre `meta`: lê `{key:'saleSeq'}`, incrementa, escreve, retorna
+    - `softDelete(id)` seta `deletedAt: Date.now()` (base para Req 10)
+    - Converter `DOMException.name === 'QuotaExceededError'` em `QuotaExceededError`
+    - _Requisitos: 1.4, 5.1, 5.3, 5.4, 5.5, 5.6_
+  - [x] 8.3 Implementar `localStorageAdapter` como fallback
+    - Criar `infra/localStorageAdapter.ts` com mesma interface `SalesRepository`, usando a chave `kwanza-profit:sales:v1` (JSON) e `kwanza-profit:seq:v1`
+    - Preservar atomicidade ler-modificar-escrever dentro de cada método
+    - _Requisitos: 5.1, 5.3_
+  - [x] 8.4 Implementar seleção automática de backend em `infra/db/factory.ts`
+    - `createSalesRepository()` tenta IndexedDB; se `indexedDB === undefined` ou `openDB` rejeita, cai para `localStorageAdapter`; se ambos falham, lança `StorageUnavailableError`
+    - _Requisitos: 5.1, 5.3_
+  - [ ]* 8.5 Escrever teste de propriedade: idempotência de `putSale` por id
+    - **Propriedade 8: Idempotência de `putSale`**
+    - Usar `fake-indexeddb/auto` via `tests/setup.ts`; para cada iteração, criar um DB em memória novo
+    - Arquivo: `tests/integration/salesRepository.property.test.ts`
+    - _Requisitos: 5.5_ · _Propriedades: P8_
+  - [ ]* 8.6 Escrever teste de propriedade: round-trip do repositório
+    - **Propriedade 9: persistir lista `V` e ler em nova instância retorna o mesmo multiset**
+    - Deduplicar por `id` antes de persistir para respeitar o invariante de chave única
+    - _Requisitos: 5.1, 5.3_ · _Propriedades: P9_
+  - [ ]* 8.7 Escrever teste de integração para quota excedida
+    - Mock de `IDBObjectStore.put` lançando `DOMException('QuotaExceededError')`; assertar que a lista prévia permanece e o erro é propagado como `QuotaExceededError`
+    - Arquivo: `tests/integration/quota.test.ts`
+    - _Requisitos: 5.6_
+  - [ ]* 8.8 Escrever teste de integração para o fallback `localStorageAdapter`
+    - Simular `indexedDB = undefined` e assertar que a factory retorna o adaptador; rodar os mesmos round-trips básicos
+    - _Requisitos: 5.1, 5.3_
+
+- [x] 9. Camada de aplicação: Store, estado e ações
+  - [x] 9.1 Implementar `app/store.ts` — store observável genérico
+    - `createStore<T>(initial): Store<T>` com `get`, `set(updater)`, `subscribe(listener)`; listeners recebem estado novo; `set` só dispara se `Object.is(prev, next) === false`
+    - _Requisitos: 2.3_
+  - [x] 9.2 Definir `app/state.ts` e estado inicial
+    - `AppState` conforme design; `initialState` com `sales: []`, `status: 'idle'`, `validationErrors: []`, `lastError: null`
+    - _Requisitos: 2.1, 2.3, 3.5_
+  - [x] 9.3 Implementar `app/actions.ts`
+    - `loadAllSales(store, repo)`: set status `loading` → `repo.getAll()` → set `sales: ordenarVendas(...)` e `status: 'idle'`; em erro, `lastError` populado
+    - `createSale(input, store, repo)`: valida com `validateSaleInput`; em sucesso chama `repo.getNextSequence`, monta `Sale` com `gerarIdTransacao` e `createdAt: Date.now()`, persiste e atualiza `sales` com `ordenarVendas([sale, ...prev])`
+    - `deleteSale(id, store, repo)` (base para Req 10): chama `repo.softDelete` e remove do array em memória
+    - Todas as ações capturam `QuotaExceededError` e populam `store.lastError = { kind: 'QuotaExceeded' }`
+    - _Requisitos: 1.3, 1.4, 2.3, 3.3, 5.6_
+  - [ ]* 9.4 Escrever testes unitários para as ações
+    - Usar um `InMemorySalesRepository` (mock) e assertar transições de estado para `createSale` (válido/ inválido), `loadAllSales`, tratamento de `QuotaExceededError`
+    - Arquivo: `tests/unit/actions.test.ts`
+    - _Requisitos: 1.3, 1.4, 2.3, 5.6_
+  - [x] 9.5 Implementar `app/router.ts` — hash router
+    - API `initRouter({ routes: Record<'#/dashboard'|'#/register'|'#/history', Mount> }, root)` que, em `hashchange`/`load`, desmonta a view anterior e monta a nova chamando `mount(root, store)`
+    - `navigate(hash)` atualiza `location.hash` (sem recarregar)
+    - Rota default: `#/dashboard`
+    - _Requisitos: 4.7, 1.10_
+
+- [x] 10. UI: componentes base e auxiliares
+  - [x] 10.1 Implementar `ui/components/TopAppBar.ts`
+    - Renderiza logo + título; aceita `variant: 'default' | 'back'` para exibir botão voltar que chama `router.navigate('#/dashboard')`
+    - Classes fiéis ao mock (`fixed top-0 ... backdrop-blur-md border-b border-outline-variant`)
+    - _Requisitos: 1.10, 9.1, 9.3_
+  - [x] 10.2 Implementar `ui/components/BottomNav.ts`
+    - Três itens (`Dashboard`, `Register`, `History`) com estado ativo derivado de `location.hash`; `md:hidden`; `pb-safe`; `aria-label="Navegação principal"`
+    - Cada item chama `router.navigate` ao clique
+    - _Requisitos: 4.3, 4.4, 4.5, 4.6, 4.7, 9.7_
+  - [x] 10.3 Implementar `ui/components/Fab.ts`
+    - Botão fixo canto inferior direito, `aria-label="Registrar nova venda"`; oculto em `#/register`; abre `#/register`
+    - _Requisitos: 4.1, 4.2, 9.4_
+  - [x] 10.4 Implementar `ui/components/FormField.ts` e `ui/components/ValidationMessage.ts`
+    - `FormField` compõe label + ícone Material + input/select + slot de erro; aceita `error?: ValidationError`
+    - `ValidationMessage` traduz `ValidationError` para texto em português (`role="alert"`)
+    - _Requisitos: 1.1, 1.5, 1.6, 1.7, 1.8, 1.9, 9.3_
+  - [x] 10.5 Implementar `ui/components/EmptyState.ts`
+    - Card central com ícone, título "Nenhuma venda registrada" e CTA para `#/register`
+    - _Requisitos: 3.5_
+
+- [x] 11. UI: componentes específicos do Dashboard e Histórico
+  - [x] 11.1 Implementar `ui/components/TotalProfitCard.ts`
+    - Card glassmórfico com `backdrop-blur-xl` e gradiente `from-[#0f172a] to-[#064e3b]`; exibe `formatCurrency(total, 'AOA')` separando sufixo `AOA` em `<span>` como no mock
+    - `role="status"` + `aria-live="polite"`
+    - Recebe `{ total: number, variation?: { pct: number; label: string } }` — `variation` é slot opcional (Req 2.6)
+    - _Requisitos: 2.1, 2.3, 2.4, 2.5, 9.1, 9.5_
+  - [x] 11.2 Implementar `ui/components/SaleListItem.ts`
+    - Renderiza `customerName`, `id`, `formatCurrency(amount, currency)` e `formatCurrency(profitAoa, 'AOA', { signed: true })`
+    - Escape HTML por padrão; ícone/bandeira da moeda resolvido por `CURRENCY_META`
+    - _Requisitos: 3.2, 3.6, 3.7_
+  - [ ]* 11.3 Escrever teste de propriedade: SaleListItem contém todos os campos exigidos
+    - **Propriedade 15: a string renderizada contém `customerName`, `id`, amount formatado e profit formatado**
+    - Arquivo: `tests/properties/saleListItem.property.test.ts`
+    - _Requisitos: 3.2_ · _Propriedades: P15_
+  - [ ]* 11.4 Escrever teste unitário para escape HTML em `SaleListItem`
+    - Exemplo: `customerName = '<script>'` não aparece como tag no HTML renderizado
+    - _Requisitos: 3.2_
+
+- [x] 12. UI: views e composição
+  - [x] 12.1 Implementar `ui/views/DashboardView.ts`
+    - Compõe `TopAppBar` + `TotalProfitCard(total = calcularLucroTotal(state.sales))` + seção "Histórico de Vendas" com `SaleListItem` por venda; `EmptyState` quando lista vazia
+    - Subscreve o store e re-renderiza o `<main>` em cada mudança
+    - _Requisitos: 2.1, 2.2, 2.3, 2.4, 3.1, 3.2, 3.5_
+  - [x] 12.2 Implementar `ui/views/RegisterView.ts`
+    - Formulário fiel a `Design system/Cadastro/code.html` usando `FormField`
+    - Ao submit: `validateSaleInput` → se `ok`, chama `createSale` e `router.navigate('#/dashboard')`; se falha, popula `store.validationErrors` e re-renderiza mensagens
+    - Botão voltar no `TopAppBar` retorna ao Dashboard sem persistir
+    - _Requisitos: 1.1, 1.2, 1.3, 1.5, 1.6, 1.7, 1.8, 1.9, 1.10_
+  - [x] 12.3 Implementar `ui/views/HistoryView.ts`
+    - Lista completa (mesma ordenação do Dashboard) usando `SaleListItem`; `EmptyState` quando vazia
+    - _Requisitos: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7_
+  - [x] 12.4 Implementar `src/main.ts` — bootstrap
+    - Importar `styles/index.css` e `styles/fonts.css`
+    - Criar store, repositório (via `createSalesRepository()`), montar `TopAppBar`, `BottomNav`, `Fab` e inicializar o router com as três views
+    - Chamar `loadAllSales(store, repo)` após o primeiro render
+    - Registrar Service Worker (ver 13.3)
+    - _Requisitos: 4.1, 4.3, 4.7, 5.3, 9.1_
+
+- [x] 13. PWA: manifesto, ícones e Service Worker
+  - [x] 13.1 Criar `public/manifest.webmanifest`
+    - Campos: `name: "KwanzaProfit"`, `short_name: "KwanzaProfit"`, `start_url: "./"`, `scope: "./"`, `display: "standalone"`, `background_color: "#101415"`, `theme_color: "#4edea3"`, `lang: "pt-AO"`, `dir: "ltr"`
+    - `icons`: 192×192, 512×512 (normal + `purpose: "maskable"`)
+    - _Requisitos: 6.1, 6.4_
+  - [x] 13.2 Adicionar ícones em `public/icons/`
+    - `icon-192.png`, `icon-512.png`, `icon-512-maskable.png` (temporariamente um placeholder esmeralda se os assets finais não existirem; referenciar no manifesto)
+    - _Requisitos: 6.1_
+  - [x] 13.3 Configurar `vite-plugin-pwa` em `vite.config.ts` e `infra/pwa/registerSW.ts`
+    - Estratégia `generateSW`, `registerType: 'autoUpdate'`, `workbox.globPatterns: ['**/*.{js,css,html,woff2,png,svg,webmanifest}']`, precache de `index.html` e assets
+    - Criar `infra/pwa/registerSW.ts` usando `virtual:pwa-register` com tratamento de erro (app segue em modo degradado se falhar)
+    - _Requisitos: 6.2, 6.3, 7.1, 7.2, 7.3, 7.4, 7.5_
+
+- [x] 14. Checkpoint — build de produção executa e app renderiza offline
+  - Rodar `npm run build && npm run preview`; em um navegador Chromium, após primeira visita, desconectar a rede e verificar que Dashboard, Register e History continuam acessíveis e que novas vendas são persistidas. Perguntar ao usuário em caso de dúvida.
+
+- [x] 15. Testes _smoke_ e e2e (Playwright + axe)
+  - [x] 15.1 Configurar Playwright
+    - Adicionar `@playwright/test` e `@axe-core/playwright`; criar `playwright.config.ts` com `webServer: { command: 'npm run preview', port: 4173 }` e projetos para Chromium (mobile 375, desktop 1280)
+    - _Requisitos: 6.2, 7.2, 9.6, 9.7_
+  - [ ]* 15.2 Smoke: manifest e Service Worker
+    - Fetch `/manifest.webmanifest` e assertar `theme_color`, `background_color`, ícones 192/512; verificar que `navigator.serviceWorker.ready` resolve
+    - Arquivo: `tests/smoke/manifest.smoke.test.ts`
+    - _Requisitos: 6.1, 6.2, 6.4_
+  - [ ]* 15.3 E2E: fluxo offline de cadastro
+    - Visitar `/`, cadastrar uma venda; `context.setOffline(true)`; recarregar; cadastrar segunda venda; assertar que ambas aparecem no Dashboard e no Histórico e que o Lucro_Total reflete a soma
+    - Arquivo: `tests/smoke/offline.e2e.test.ts`
+    - _Requisitos: 5.3, 7.2, 7.3, 7.4_
+  - [ ]* 15.4 E2E: acessibilidade das três views
+    - Rodar `AxeBuilder` nas rotas `#/dashboard`, `#/register`, `#/history` e assertar zero violações sérias
+    - _Requisitos: 9.1, 9.2, 9.3_
+  - [ ]* 15.5 E2E: garantir ausência de chamadas a hosts remotos
+    - `page.route('**/*', route => { expect(new URL(route.request().url()).origin).toBe(baseURL); route.continue(); })`
+    - _Requisitos: 5.2_
+  - [ ]* 15.6 Lighthouse CI com orçamento PWA ≥ 90
+    - Adicionar `@lhci/cli` em `package.json` e `.lighthouserc.json` com asserções `categories.pwa >= 0.9`, `categories.performance >= 0.8`
+    - _Requisitos: 6.1, 6.2, 7.1_
+
+- [x] 16. Checkpoint final — suíte completa verde
+  - Rodar `npm run typecheck && npm run test:run && npm run e2e`; se algum teste falhar, perguntar ao usuário antes de alterar o comportamento especificado.
+
+## Tasks opcionais (recursos configuráveis)
+
+- [ ]* 17. Variação percentual do Lucro_Total (Req 2.6)
+  - [ ]* 17.1 Implementar `domain/profit.calcularVariacaoPercentual(sales, janela)`
+    - Janela por padrão: últimos 7 dias vs. 7 dias anteriores; expor função pura que recebe `now`
+    - _Requisitos: 2.6_
+  - [ ]* 17.2 Plugar variação no `TotalProfitCard`
+    - Passar `variation` calculada em `DashboardView`; renderizar chip `+X%`/`-X%` usando tokens do Design System
+    - _Requisitos: 2.6_
+  - [ ]* 17.3 Teste unitário com tabela de exemplos
+    - _Requisitos: 2.6_
+
+- [ ]* 18. Edição e exclusão de Vendas (Req 10)
+  - [ ]* 18.1 Expor ação de edição no `SaleListItem` e na `HistoryView`
+    - Abrir `RegisterView` em modo edição com `?id=TRX-...`; preservar `id` e `createdAt`; atualizar `profitAoa`/`customerName`/`currency`/`amount`
+    - _Requisitos: 10.1, 10.2_
+  - [ ]* 18.2 Implementar confirmação e exclusão soft
+    - Diálogo de confirmação (`role="dialog"`, trap de foco); chama `deleteSale` (soft delete via `deletedAt`)
+    - _Requisitos: 10.3, 10.4_
+  - [ ]* 18.3 Teste de propriedade: edição preserva delta no Lucro_Total
+    - **Propriedade 16 (condicional): `total(substituir(V,v,v')) === total(V) − v.profitAoa + v'.profitAoa`**
+    - Arquivo: `tests/properties/edit.property.test.ts`
+    - _Requisitos: 10.2_ · _Propriedades: P16_
+
+- [ ]* 19. Filtros do Histórico de Vendas (Req 11)
+  - [ ]* 19.1 Implementar `domain/filter.ts`
+    - `aplicarFiltros(sales, { currency?, from?, to? })` como função pura
+    - _Requisitos: 11.1, 11.2, 11.3, 11.4, 11.5_
+  - [ ]* 19.2 UI de filtros no `DashboardView`/`HistoryView`
+    - Controles de moeda e intervalo de datas; recalcular Lucro_Total considerando filtros ativos
+    - _Requisitos: 11.1, 11.2, 11.4_
+  - [ ]* 19.3 Teste de propriedade: correção do filtro e invariante de tamanho
+    - **Propriedade 17 (condicional): correção, completude, `length(filter(V,f)) ≤ length(V)` e invariante de soma filtrada**
+    - Arquivo: `tests/properties/filter.property.test.ts`
+    - _Requisitos: 11.1, 11.2, 11.4, 11.5_ · _Propriedades: P17_
+
+- [ ]* 20. Qualidade estendida (polimento)
+  - [ ]* 20.1 Configurar ESLint + Prettier
+    - Regras `@typescript-eslint/recommended`, `eslint-plugin-import` (limitar `infra/*` de ser importado por `ui/*`)
+    - _Requisitos: —_
+  - [ ]* 20.2 Configurar `vitest --coverage` com metas do design
+    - Domínio: linhas ≥ 95%, branches ≥ 90%; UI ≥ 70%
+    - _Requisitos: 12.1–12.7_
+  - [ ]* 20.3 Adicionar Stryker (mutation testing) para `src/domain`
+    - Meta mutation score ≥ 80% nos módulos `profit`, `ordering`, `formatter`, `sale`
+    - _Requisitos: —_
+
+## Notas
+
+- As tarefas com `*` são opcionais. No caminho mínimo para um MVP funcional, todas as não-opcionais (1–14, mais o checkpoint 16 rodando apenas typecheck + build) são suficientes.
+- A ordem é intencionalmente _dependency-first_: domínio puro → infraestrutura → aplicação → UI → PWA → e2e. Isso permite que falhas sejam detectadas no nível mais barato possível.
+- Propriedades 1–15 estão ancoradas no design como fonte-da-verdade; cada teste PBT deve citar a propriedade pelo número e pelo requisito validado.
+- Nenhuma task envolve deploy, instrumentação de produção ou coleta de métricas de usuário — o plano cobre apenas desenvolvimento, testes automatizados e verificação local.

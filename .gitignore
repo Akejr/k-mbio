@@ -1,0 +1,50 @@
+# Dependências
+node_modules/
+
+# Builds
+dist/
+build/
+*.tsbuildinfo
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.log
+
+# Cache / temporários
+.cache/
+.vite/
+.parcel-cache/
+.turbo/
+.next/
+.nuxt/
+.svelte-kit/
+.temp/
+.tmp/
+
+# Testes e cobertura
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# Editor / SO
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
+*.swo
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# Variáveis de ambiente (nunca commitar)
+.env
+.env.*
+!.env.example
+
+# Service Worker output (gerado pelo build)
+dev-dist/

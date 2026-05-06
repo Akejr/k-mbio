@@ -1,0 +1,22 @@
+/*
+ * Fontes auto-hospedadas para operação offline (Req 7.1, 9.2, 9.3).
+ *
+ * Inter via @fontsource/inter (subset latin, pesos 400/500/600/700).
+ * Os arquivos .woff2 são servidos pelo próprio bundle Vite — sem chamadas
+ * ao Google Fonts em runtime.
+ */
+@import "@fontsource/inter/latin-400.css";
+@import "@fontsource/inter/latin-500.css";
+@import "@fontsource/inter/latin-600.css";
+@import "@fontsource/inter/latin-700.css";
+
+/*
+ * Material Symbols Outlined (variable font).
+ *
+ * O pacote npm `material-symbols` entrega o .woff2 variable pré-empacotado e
+ * uma folha de estilo que declara @font-face apontando para o arquivo local
+ * (./material-symbols-outlined.woff2 dentro de node_modules/material-symbols).
+ * Vite resolve esse caminho em build e serve o woff2 junto com o resto do
+ * bundle, satisfazendo o requisito de ausência de rede remota em runtime.
+ */
+@import "material-symbols/outlined.css";
