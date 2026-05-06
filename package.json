@@ -11,7 +11,8 @@
     "test": "vitest",
     "test:run": "vitest --run --passWithNoTests",
     "typecheck": "tsc --noEmit",
-    "lint": "echo 'lint not configured'"
+    "lint": "echo 'lint not configured'",
+    "deploy": "npm run build && node scripts/deploy-pages.mjs"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.8",

@@ -48,3 +48,6 @@ Thumbs.db
 
 # Service Worker output (gerado pelo build)
 dev-dist/
+
+# Worktree local da branch gh-pages (usado pelo script de deploy manual).
+.gh-pages/
