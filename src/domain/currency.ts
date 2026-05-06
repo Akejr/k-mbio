@@ -11,9 +11,9 @@
  * Conjunto fechado de moedas suportadas pelo sistema.
  *
  * - `AOA` é a moeda de apuração do Lucro_Total (sempre presente).
- * - `USD`, `EUR`, `GBP`, `ZAR` são as moedas estrangeiras vendidas ao cliente.
+ * - `USD`, `EUR`, `GBP`, `BRL` são as moedas estrangeiras vendidas ao cliente.
  */
-export type CurrencyCode = 'AOA' | 'USD' | 'EUR' | 'GBP' | 'ZAR';
+export type CurrencyCode = 'AOA' | 'USD' | 'EUR' | 'GBP' | 'BRL';
 
 /**
  * Metadados de formatação associados a cada moeda suportada.
@@ -47,7 +47,7 @@ export const FOREIGN_CURRENCIES: readonly Exclude<CurrencyCode, 'AOA'>[] = [
   'USD',
   'EUR',
   'GBP',
-  'ZAR',
+  'BRL',
 ] as const;
 
 /**
@@ -69,10 +69,10 @@ export const ALL_CURRENCIES: readonly CurrencyCode[] = [
  * | USD   | "$"     | prefix  | 2              | ","    | "."     |
  * | EUR   | "€"     | prefix  | 2              | ","    | "."     |
  * | GBP   | "£"     | prefix  | 2              | ","    | "."     |
- * | ZAR   | "ZAR "  | prefix  | 2              | ","    | "."     |
+ * | BRL   | "R$ "   | prefix  | 2              | "."    | ","     |
  *
- * Observação: para ZAR o símbolo inclui o espaço final por contrato; o
- * `Formatador_de_Moeda` concatena símbolo e número diretamente.
+ * Observação: para BRL seguimos a convenção brasileira (R$ 1.234,56) e para
+ * AOA a convenção angolana de milhares.
  */
 export const CURRENCY_META: Record<CurrencyCode, CurrencyMeta> = {
   AOA: {
@@ -107,13 +107,13 @@ export const CURRENCY_META: Record<CurrencyCode, CurrencyMeta> = {
     thousandsSep: ',',
     decimalSep: '.',
   },
-  ZAR: {
-    code: 'ZAR',
-    symbol: 'ZAR ',
+  BRL: {
+    code: 'BRL',
+    symbol: 'R$ ',
     symbolPosition: 'prefix',
     fractionDigits: 2,
-    thousandsSep: ',',
-    decimalSep: '.',
+    thousandsSep: '.',
+    decimalSep: ',',
   },
 };
 

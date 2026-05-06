@@ -99,10 +99,18 @@ export function TopAppBar(props: TopAppBarProps = {}): HTMLElement {
     'header',
     {
       class:
-        'fixed top-0 left-0 right-0 flex items-center justify-between px-margin-mobile h-16 w-full z-50 ' +
+        'fixed top-0 left-0 right-0 z-50 w-full ' +
         'bg-surface-container-lowest/75 backdrop-blur-xl border-b border-outline-variant/50 ' +
-        'shadow-[0_1px_0_rgba(255,255,255,0.02)] animate-slide-down',
+        'shadow-[0_1px_0_rgba(255,255,255,0.02)] animate-slide-down ' +
+        'pt-safe',
     },
-    [leftGroup, statusChip],
+    el(
+      'div',
+      {
+        class:
+          'flex items-center justify-between px-margin-mobile h-16',
+      },
+      [leftGroup, statusChip],
+    ),
   );
 }

@@ -39,14 +39,14 @@ export const arbNomeCliente = fc.string({ minLength: 1, maxLength: 120 })
  * `AOA`). Corresponde ao tipo `Sale.currency`.
  */
 export const arbMoedaEstrangeira: fc.Arbitrary<Exclude<CurrencyCode, 'AOA'>> =
-  fc.constantFrom('USD', 'EUR', 'GBP', 'ZAR' as const);
+  fc.constantFrom('USD', 'EUR', 'GBP', 'BRL' as const);
 
 /**
  * Qualquer moeda suportada pelo sistema (inclusive `AOA`), usada pelo
  * Formatador_de_Moeda.
  */
 export const arbMoeda: fc.Arbitrary<CurrencyCode> =
-  fc.constantFrom('AOA', 'USD', 'EUR', 'GBP', 'ZAR' as const);
+  fc.constantFrom('AOA', 'USD', 'EUR', 'GBP', 'BRL' as const);
 
 /**
  * Quantidade vendida em moeda estrangeira (`Sale.amount`). Constrange ao

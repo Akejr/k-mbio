@@ -62,16 +62,13 @@ function svgContent(code: CurrencyCode): string {
         <path d="M0,0 L24,24 M24,0 L0,24" stroke="#c8102e" stroke-width="1.5"/>
         <path d="M12,0 L12,24 M0,12 L24,12" stroke="#ffffff" stroke-width="4"/>
         <path d="M12,0 L12,24 M0,12 L24,12" stroke="#c8102e" stroke-width="2.4"/>`;
-    case 'ZAR':
-      // Bandeira da África do Sul (simplificada).
+    case 'BRL':
+      // Bandeira do Brasil (simplificada): verde + losango amarelo + disco azul.
       return `
-        <rect width="24" height="24" fill="#ffffff"/>
-        <polygon points="0,0 10,12 0,24" fill="#007a4d"/>
-        <polygon points="10,12 24,0 24,7 14,12 24,17 24,24" fill="#ffffff"/>
-        <polygon points="0,0 24,0 24,7 10,12" fill="#de3831"/>
-        <polygon points="0,24 24,24 24,17 10,12" fill="#002395"/>
-        <polygon points="0,3 7,12 0,21" fill="#000000"/>
-        <polygon points="7,12 24,3 24,7 12,12 24,17 24,21" fill="#ffb612"/>`;
+        <rect width="24" height="24" fill="#009c3b"/>
+        <polygon points="12,3 21,12 12,21 3,12" fill="#ffdf00"/>
+        <circle cx="12" cy="12" r="4.5" fill="#002776"/>
+        <path d="M7.8 12.2 A 5 5 0 0 1 16.2 11.8" stroke="#ffffff" stroke-width="0.9" fill="none"/>`;
     case 'AOA':
     default:
       // Emblema circular com "Kz" dourado para AOA.

@@ -172,7 +172,7 @@ export function HistoryView(
         'main',
         {
           class:
-            'pt-[88px] px-margin-mobile max-w-4xl mx-auto flex flex-col gap-lg pb-[140px]',
+            'pt-topbar-safe px-margin-mobile max-w-4xl mx-auto flex flex-col gap-lg pb-[140px]',
         },
         [banner, section],
       );

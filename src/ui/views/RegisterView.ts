@@ -31,7 +31,7 @@ const CURRENCY_LABELS: Record<(typeof FOREIGN_CURRENCIES)[number], string> = {
   USD: 'Dólar (USD)',
   EUR: 'Euro (EUR)',
   GBP: 'Libra (GBP)',
-  ZAR: 'Rand (ZAR)',
+  BRL: 'Real (BRL)',
 };
 
 export function RegisterView(
@@ -227,7 +227,7 @@ export function RegisterView(
       'main',
       {
         class:
-          'pt-[96px] pb-[140px] px-margin-mobile max-w-2xl mx-auto w-full',
+          'pt-topbar-safe pb-[140px] px-margin-mobile max-w-2xl mx-auto w-full',
       },
       [header, formCard],
     );
