@@ -1,12 +1,10 @@
 # Workflow de deploy do Kâmbio para GitHub Pages.
 #
 # - Dispara em pushes para `main` e permite execução manual.
-# - Usa a nova API oficial de Pages (actions/deploy-pages), sem branch
+# - Usa a API oficial de Pages (actions/deploy-pages), sem branch
 #   gh-pages intermediária.
-# - Cache de npm para acelerar buildss sucessivos.
 #
-# Pré-requisito no repositório: ir em Settings → Pages e selecionar
-# "Source: GitHub Actions".
+# Pré-requisito no repositório: Settings → Pages → "Source: GitHub Actions".
 
 name: Deploy to GitHub Pages
 
@@ -37,10 +35,20 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
 
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      # Usamos `npm install` (não `npm ci`) porque o package-lock.json
+      # inclui binários nativos opcionais travados para a plataforma onde
+      # as dependências foram instaladas (Windows, no caso). `npm install`
+      # recalcula os optional deps para o SO corrente (Linux aqui),
+      # resolvendo por exemplo:
+      #   - @rollup/rollup-linux-x64-gnu
+      #   - lightningcss-linux-x64-gnu
+      #   - sharp-linux-x64
       - name: Install dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund --prefer-offline
 
       - name: Typecheck
         run: npm run typecheck
@@ -49,8 +57,7 @@ jobs:
         run: npm run build
 
       - name: Ensure .nojekyll in dist
-        run: |
-          touch dist/.nojekyll
+        run: touch dist/.nojekyll
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
