@@ -2,6 +2,14 @@ import { defineConfig } from 'vite';
 import { fileURLToPath, URL } from 'node:url';
 import { VitePWA } from 'vite-plugin-pwa';
 
+// Base path do build — necessário para GitHub Pages (project site).
+// A URL final é `https://akejr.github.io/k-mbio/`, então todos os assets
+// absolutos precisam ser prefixados com `/k-mbio/`. Vite cuida disso no
+// build quando `base` é definido; em dev (`npm run dev`), o base também
+// é aplicado, então o app serve em http://localhost:5173/k-mbio/ — o que
+// é consistente com o ambiente de produção.
+const BASE = '/k-mbio/';
+
 // Espelha os paths declarados em tsconfig.json (@domain, @app, @infra, @ui).
 // O root é 'src' (onde reside o index.html), e o build emite em '../dist'
 // relativo a esse root, resultando em '<workspace>/dist'.
@@ -21,6 +29,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 // pelo Vite (via `publicDir`). SVGs têm compatibilidade ampla em
 // manifests PWA de navegadores modernos (Chrome, Edge, Firefox).
 export default defineConfig({
+  base: BASE,
   root: 'src',
   publicDir: fileURLToPath(new URL('./public', import.meta.url)),
   resolve: {
@@ -55,8 +64,8 @@ export default defineConfig({
         short_name: 'Kâmbio',
         description:
           'Registre vendas de câmbio e acompanhe o Lucro Total em Kwanzas (AOA), totalmente offline.',
-        start_url: './',
-        scope: './',
+        start_url: '.',
+        scope: '.',
         display: 'standalone',
         orientation: 'portrait',
         background_color: '#101415',

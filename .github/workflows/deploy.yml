@@ -1,0 +1,69 @@
+# Workflow de deploy do Kâmbio para GitHub Pages.
+#
+# - Dispara em pushes para `main` e permite execução manual.
+# - Usa a nova API oficial de Pages (actions/deploy-pages), sem branch
+#   gh-pages intermediária.
+# - Cache de npm para acelerar buildss sucessivos.
+#
+# Pré-requisito no repositório: ir em Settings → Pages e selecionar
+# "Source: GitHub Actions".
+
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Permissões necessárias para o deploy oficial do Pages.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Evita deploys concorrentes se houver vários pushes rápidos.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Ensure .nojekyll in dist
+        run: |
+          touch dist/.nojekyll
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -14,19 +14,22 @@
       dos <link rel="apple-touch-icon"> apontando para PNGs reais. A iOS
       aplica automaticamente sua máscara de cantos arredondados, então o
       ícone é renderizado como quadrado cheio.
+
+      Usamos `%BASE_URL%` para que o Vite injete o prefixo correto
+      (`/k-mbio/` em produção no GitHub Pages; `/` em dev local).
     -->
-    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon-180.png" />
-    <link rel="apple-touch-icon" sizes="167x167" href="/icons/apple-touch-icon-167.png" />
-    <link rel="apple-touch-icon" sizes="152x152" href="/icons/apple-touch-icon-152.png" />
-    <link rel="apple-touch-icon" sizes="120x120" href="/icons/apple-touch-icon-120.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="%BASE_URL%icons/apple-touch-icon-180.png" />
+    <link rel="apple-touch-icon" sizes="167x167" href="%BASE_URL%icons/apple-touch-icon-167.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="%BASE_URL%icons/apple-touch-icon-152.png" />
+    <link rel="apple-touch-icon" sizes="120x120" href="%BASE_URL%icons/apple-touch-icon-120.png" />
 
     <!-- Nome curto usado no atalho iOS e PWA standalone. -->
     <meta name="apple-mobile-web-app-title" content="Kâmbio" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
-    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
-    <link rel="icon" type="image/svg+xml" href="/icons/icon-512.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="%BASE_URL%icons/icon-192.png" />
+    <link rel="icon" type="image/svg+xml" href="%BASE_URL%icons/icon-512.svg" />
   </head>
   <body class="bg-background text-on-background">
     <div id="app"></div>
