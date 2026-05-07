@@ -19,6 +19,7 @@
 
 import { navigate } from '../../app/router';
 import { el, icon } from './dom';
+import { PrivacyToggle } from './PrivacyToggle';
 
 export interface TopAppBarProps {
   variant?: 'default' | 'back';
@@ -75,25 +76,9 @@ export function TopAppBar(props: TopAppBarProps = {}): HTMLElement {
     leftSlot ? [leftSlot, titleGroup] : [titleGroup],
   );
 
-  // Chip opcional de status à direita ("LIVE" piscando) — pequeno toque "trading desk".
-  const statusChip = el(
-    'div',
-    {
-      class:
-        'hidden sm:flex items-center gap-[6px] px-3 py-1 rounded-full bg-surface-container-high/60 border border-outline-variant/40',
-      'aria-hidden': 'true',
-    },
-    [
-      el('span', {
-        class: 'w-1.5 h-1.5 rounded-full bg-primary animate-pulse-glow',
-      }),
-      el(
-        'span',
-        { class: 'font-label-caps text-[10px] text-on-surface-variant tracking-[0.18em]' },
-        'LOCAL',
-      ),
-    ],
-  );
+  // Botão de privacidade à direita: esconde valores monetários com blur.
+  // Substitui o chip decorativo anterior — funcionalidade real > enfeite.
+  const rightSlot = PrivacyToggle();
 
   return el(
     'header',
@@ -110,7 +95,7 @@ export function TopAppBar(props: TopAppBarProps = {}): HTMLElement {
         class:
           'flex items-center justify-between px-margin-mobile h-16',
       },
-      [leftGroup, statusChip],
+      [leftGroup, rightSlot],
     ),
   );
 }

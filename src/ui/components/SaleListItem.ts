@@ -1,21 +1,33 @@
 /**
- * `SaleListItem` — linha do Histórico_de_Vendas com visual moderno.
+ * `SaleListItem` — linha do Histórico_de_Vendas em duas faixas.
  *
- * ## Redesign moderno
+ * ## Layout
  *
- * - Badge circular com a bandeira/símbolo da moeda à esquerda do conteúdo.
- * - Segundo badge menor (inicial do cliente) quando a bandeira não for
- *   suficiente — não: usamos apenas a bandeira para não poluir.
- * - Valores em duas colunas com labels em _caps_ minúsculos, e a coluna de
- *   lucro tem fundo verde-translúcido quando positivo.
- * - Hover: elevação sutil + glow verde nas bordas.
- * - Animação de entrada escalonada (a view aplica `anim-delay-*`).
+ * ```
+ * ┌──────────────────────────────────────────────────────────┐
+ * │ [flag]  Nome completo do cliente          R$ 20.000,00   │
+ * │         TRX-0008                         +230.000 AOA    │
+ * └──────────────────────────────────────────────────────────┘
+ * ```
+ *
+ * - **Linha 1:** bandeira + nome do cliente (pode quebrar em duas linhas se
+ *   muito longo) + valor vendido à direita.
+ * - **Linha 2:** ID da transação + lucro à direita.
+ *
+ * Ganhos em relação ao layout anterior:
+ *
+ * - Nome **completo** sempre visível: usa `break-words` + `leading-snug`
+ *   para quebrar em palavra. Ocupa largura máxima porque valores numéricos
+ *   ficam num nível abaixo.
+ * - Densidade de informação equivalente (mesmo número de linhas em média),
+ *   mas mais respirável.
+ * - Alinhamento perfeito entre valor/lucro (mesmo lado direito, mesmo peso
+ *   tipográfico) para leitura vertical rápida.
  *
  * ## Segurança
  *
- * Tanto `customerName` quanto `id` vêm da entrada do operador e podem
- * conter qualquer unicode. Toda inserção é feita via `textContent` ou
- * `document.createTextNode` (via helper `el`), nunca `innerHTML`.
+ * Todas as inserções de texto usam `textContent` (via `el`), nunca
+ * `innerHTML`. Caracteres `<`, `>`, `&` não são interpretados.
  *
  * ## Requisitos cobertos
  *
@@ -29,96 +41,85 @@ import { formatCurrency } from '../../domain/formatter';
 import { CurrencyBadge } from './currencyBadge';
 import { el } from './dom';
 
+/**
+ * Formata um timestamp `createdAt` em `dd/mm/yyyy · hh:mm` usando o locale
+ * `pt-BR` (coerente com o resto da UI, que é em português).
+ *
+ * Escolhi data + hora porque, em um mesmo dia, um operador pode cadastrar
+ * várias vendas — só a data não diferencia o suficiente. O separador `·`
+ * (interponto) mantém a legibilidade sem poluir com barras/vírgulas.
+ */
+function formatSaleDate(timestampMs: number): string {
+  const date = new Date(timestampMs);
+  if (Number.isNaN(date.getTime())) {
+    return '—';
+  }
+  const dd = String(date.getDate()).padStart(2, '0');
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const yyyy = String(date.getFullYear());
+  const hh = String(date.getHours()).padStart(2, '0');
+  const min = String(date.getMinutes()).padStart(2, '0');
+  return `${dd}/${mm}/${yyyy} · ${hh}:${min}`;
+}
+
 export function SaleListItem(sale: Sale): HTMLElement {
   const isProfitPositive = sale.profitAoa > 0;
 
-  // --- Badge da moeda ---
+  // Badge da moeda — tamanho 40, alinhado à faixa superior.
   const badge = CurrencyBadge(sale.currency, 40, 'shadow-md');
 
-  // --- Coluna de cliente ---
+  // --- Linha 1: nome + valor vendido ---
   const customerName = el(
     'span',
     {
       class:
-        'font-body-base text-[15px] text-on-surface font-semibold leading-tight truncate',
+        'flex-1 min-w-0 font-body-base text-[15px] text-on-surface font-semibold leading-snug break-words',
     },
     sale.customerName,
   );
-  const transactionId = el(
-    'span',
-    {
-      class:
-        'font-data-mono text-[11px] text-on-surface-variant/80 leading-none mt-1 tracking-wider',
-    },
-    sale.id,
-  );
-  const customerBlock = el(
-    'div',
-    { class: 'flex flex-col min-w-0' },
-    [customerName, transactionId],
-  );
-
-  const leftGroup = el(
-    'div',
-    { class: 'flex items-center gap-sm min-w-0 flex-1' },
-    [badge, customerBlock],
-  );
-
-  // --- Valor vendido ---
   const amountText = el(
     'span',
     {
       class:
-        'font-data-mono text-[14px] text-on-surface font-bold tracking-tight',
+        'flex-shrink-0 font-data-mono text-[15px] text-on-surface font-bold tracking-tight whitespace-nowrap',
     },
     formatCurrency(sale.amount, sale.currency),
   );
-  const amountLabel = el(
+  const topRow = el(
+    'div',
+    { class: 'flex items-start justify-between gap-sm' },
+    [customerName, amountText],
+  );
+
+  // --- Linha 2: data de criação + lucro ---
+  const transactionDate = el(
     'span',
     {
       class:
-        'font-label-caps text-[10px] text-on-surface-variant uppercase tracking-[0.12em] leading-none mt-1',
+        'font-data-mono text-[11px] text-on-surface-variant/80 tracking-wide whitespace-nowrap',
     },
-    'Valor',
+    formatSaleDate(sale.createdAt),
   );
-  const amountCol = el(
-    'div',
-    { class: 'flex flex-col items-end text-right' },
-    [amountText, amountLabel],
-  );
-
-  // --- Lucro com pill verde translúcida ---
   const profitText = el(
     'span',
     {
       class:
-        'font-data-mono text-[14px] font-bold tracking-tight ' +
+        'privacy-target flex-shrink-0 font-data-mono text-[14px] font-bold tracking-tight whitespace-nowrap ' +
         (isProfitPositive ? 'text-primary' : 'text-on-surface'),
     },
     formatCurrency(sale.profitAoa, 'AOA', { signed: true }),
   );
-  const profitLabel = el(
-    'span',
-    {
-      class:
-        'font-label-caps text-[10px] text-on-surface-variant uppercase tracking-[0.12em] leading-none mt-1',
-    },
-    'Lucro',
-  );
-  const profitCol = el(
+  const bottomRow = el(
     'div',
-    {
-      class:
-        'flex flex-col items-end text-right pl-sm border-l ' +
-        (isProfitPositive ? 'border-primary/30' : 'border-outline-variant'),
-    },
-    [profitText, profitLabel],
+    { class: 'flex items-center justify-between gap-sm mt-1' },
+    [transactionDate, profitText],
   );
 
-  const rightGroup = el(
+  // Coluna direita com as duas linhas empilhadas.
+  const contentColumn = el(
     'div',
-    { class: 'flex items-center gap-md flex-shrink-0' },
-    [amountCol, profitCol],
+    { class: 'flex-1 min-w-0 flex flex-col' },
+    [topRow, bottomRow],
   );
 
   return el(
@@ -128,12 +129,12 @@ export function SaleListItem(sale: Sale): HTMLElement {
         'group relative overflow-hidden rounded-2xl p-md press-scale ' +
         'bg-surface-container/80 backdrop-blur-md ' +
         'border border-outline-variant/50 ' +
-        'flex items-center justify-between gap-md ' +
+        'flex items-start gap-sm ' +
         'shadow-[0_4px_16px_rgba(0,0,0,0.25)] ' +
         'hover:border-primary/40 hover:bg-surface-container-high/70 ' +
         'animate-slide-up',
       role: 'listitem',
     },
-    [leftGroup, rightGroup],
+    [badge, contentColumn],
   );
 }

@@ -116,12 +116,12 @@ export function TotalProfitCard(props: TotalProfitCardProps): HTMLElement {
     [headerLabel, buildVariationChip(props.variation)],
   );
 
-  // --- Valor principal ---
+  // --- Valor principal (alvo do blur de privacidade) ---
   const amountNumber = el(
     'span',
     {
       class:
-        'font-display-lg text-[48px] md:text-[64px] leading-[1.05] text-white font-extrabold tracking-tight drop-shadow-[0_4px_24px_rgba(0,0,0,0.35)]',
+        'privacy-target font-display-lg text-[48px] md:text-[64px] leading-[1.05] text-white font-extrabold tracking-tight drop-shadow-[0_4px_24px_rgba(0,0,0,0.35)]',
     },
     formatCurrency(props.total, 'AOA').replace(' AOA', ''),
   );

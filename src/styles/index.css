@@ -143,6 +143,36 @@
   .press-scale:active {
     transform: scale(0.97);
   }
+
+  /*
+   * Privacy blur: quando <html data-privacy="hidden">, todos os alvos com a
+   * classe `.privacy-target` recebem um blur animado que esconde o texto
+   * mas preserva o layout. Animação dupla — filter (blur) + letter-spacing
+   * (esparramento sutil) — dá a impressão de "desfoque dinâmico" em vez
+   * de apenas um borrão estático.
+   *
+   * O seletor em nível de `<html>` permite que qualquer componente reaja
+   * ao toggle sem precisar se inscrever no pub/sub em TS.
+   */
+  .privacy-target {
+    transition:
+      filter 360ms cubic-bezier(0.22, 1, 0.36, 1),
+      letter-spacing 360ms cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 360ms ease;
+    will-change: filter, letter-spacing;
+  }
+  :root[data-privacy='hidden'] .privacy-target {
+    filter: blur(10px);
+    letter-spacing: 0.08em;
+    /* Permite copiar, mas dificulta — ao tocar o blur some localmente. */
+    user-select: none;
+  }
+  /* Respeita preferência do usuário para reduzir movimento. */
+  @media (prefers-reduced-motion: reduce) {
+    .privacy-target {
+      transition: filter 0s, letter-spacing 0s;
+    }
+  }
 }
 
 @layer utilities {
