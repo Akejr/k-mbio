@@ -111,7 +111,13 @@ export async function loadAllSales(
   store.set((prev) => ({ ...prev, status: 'loading' }));
   try {
     const loaded = await repo.getAll();
-    const ordered = ordenarVendas(loaded);
+    // Invariante da camada de aplicação: `state.sales` contém apenas
+    // Vendas **ativas** (não soft-deleted). O repositório devolve TUDO
+    // (ver JSDoc de `SalesRepository.getAll`), cabe a esta ação filtrar.
+    // Sem isso, Vendas com `deletedAt !== null` voltariam a aparecer na
+    // UI após reabrir o app, mesmo com o `calcularLucroTotal` ignorando-as.
+    const active = loaded.filter((s) => s.deletedAt === null);
+    const ordered = ordenarVendas(active);
     store.set((prev) => ({
       ...prev,
       sales: ordered,

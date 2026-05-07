@@ -62,9 +62,12 @@ export function FormField(props: FormFieldProps): FormFieldResult {
   } = props;
 
   // Classes base do input (mesmo para select).
+  // IMPORTANTE: `text-[16px]` evita o auto-zoom do iOS Safari ao focar um
+  // input com fonte < 16px. Sem isso, o browser estica o viewport
+  // automaticamente ao tocar no campo, quebrando o layout.
   const baseField =
     'w-full bg-surface-container-lowest/80 rounded-xl py-3 pl-[48px] ' +
-    'font-body-base text-[15px] placeholder:text-outline ' +
+    'font-body-base text-[16px] placeholder:text-outline ' +
     'focus:outline-none transition-all duration-200 border backdrop-blur-md';
 
   const padRight = kind === 'select' ? 'pr-12' : suffix ? 'pr-14' : 'pr-4';

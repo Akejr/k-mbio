@@ -2,7 +2,15 @@
 <html class="dark" lang="pt-AO">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!--
+      Viewport sem zoom: `user-scalable=no` bloqueia pinch-to-zoom no Android;
+      `maximum-scale=1` bloqueia o auto-zoom do iOS Safari ao focar inputs
+      com fonte < 16px. Para tornar o bloqueio à prova de pinch em iOS também,
+      tratamos `gesturestart` em JS (ver `main.ts`). Em PWA _standalone_ no
+      iPhone, o comportamento nativo já é sem zoom, mas no Safari web vanilla
+      esta combinação é necessária.
+    -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="theme-color" content="#4edea3" />
     <meta name="color-scheme" content="dark" />
     <meta name="description" content="Kâmbio — registre vendas de câmbio e acompanhe o Lucro Total em Kwanzas." />

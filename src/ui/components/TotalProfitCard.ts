@@ -1,19 +1,23 @@
 /**
  * `TotalProfitCard` — card hero do Dashboard exibindo o Lucro_Total em AOA.
  *
- * ## Redesign moderno
+ * ## Redesign limpo
  *
- * - Fundo em gradiente diagonal (obsidiana → verde-floresta) com blobs
- *   esmeralda flutuantes (animação `float`) que criam profundidade sem
- *   distrair da leitura do número.
- * - Shimmer sutil atravessando o card (animado via keyframe `shimmer`).
- * - Contador animado: o valor cresce do `previousTotal` até `total` em
- *   800 ms com easing, dando sensação de "contabilização em tempo real".
- *   Reduz motion quando `prefers-reduced-motion: reduce` (atribuído
- *   imediatamente, sem animação).
- * - Metadados abaixo do número: "período · vendas registradas" — dando
- *   mais contexto do que um único valor solto.
- * - Chip de variação percentual quando fornecido (opcional, Req 2.6).
+ * - **Fundo coeso:** camada base em `bg-surface-container` arredondada em
+ *   `rounded-3xl`, seguida de um gradiente interno em `absolute inset-0`
+ *   com o mesmo radius. Isso elimina o "sangramento" de cantos quadrados
+ *   que apareciam quando o gradiente era aplicado como `bg-gradient-*` no
+ *   próprio elemento root sem `overflow-hidden` eficaz.
+ * - **Composição isolada:** `isolate` + `overflow-hidden` garantem que
+ *   blobs, shimmer e conteúdo não vazem fora do radius — nem mesmo em
+ *   navegadores que lidam mal com `backdrop-blur` + clipping.
+ * - **Sem contagem de vendas:** removido o chip "N vendas"; o foco agora
+ *   é só o número + variação opcional.
+ * - **Tipografia maior e mais respirável:** headline em peso 700, número
+ *   em 800 com tracking negativo. Sufixo "AOA" em pill separada para não
+ *   competir com o número.
+ * - **Borda sutil em gradiente:** uma camada extra de `mask` desenha uma
+ *   borda interna esmeralda→transparente, típica de dashboards premium.
  *
  * ## Requisitos cobertos
  *
@@ -27,8 +31,6 @@ import { el, icon } from './dom';
 export interface TotalProfitCardProps {
   /** Lucro total em AOA. */
   total: number;
-  /** Número de vendas (para subtítulo). */
-  salesCount?: number;
   /** Valor anterior — usado para animar a transição do contador. */
   previousTotal?: number;
   /** Variação percentual opcional (Req 2.6). */
@@ -48,10 +50,6 @@ function prefersReducedMotion(): boolean {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
-/**
- * Anima um contador numérico de `from` a `to` durante `durationMs`,
- * atualizando `onUpdate` com o valor intermediário a cada frame.
- */
 function animateCounter(
   from: number,
   to: number,
@@ -67,7 +65,6 @@ function animateCounter(
   const step = (now: number): void => {
     const elapsed = now - start;
     const t = Math.min(1, elapsed / durationMs);
-    // easeOutCubic — chega rapidamente e desacelera.
     const eased = 1 - Math.pow(1 - t, 3);
     onUpdate(from + delta * eased);
     if (t < 1) {
@@ -78,15 +75,22 @@ function animateCounter(
 }
 
 export function TotalProfitCard(props: TotalProfitCardProps): HTMLElement {
-  // --- Blobs decorativos (dois círculos borrados animados) ---
+  // --- Camada de fundo: gradiente diagonal dentro do card ---
+  const bg = el('div', {
+    class:
+      'pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-br from-[#0b1f17] via-[#0e2a20] to-[#052a1d]',
+    'aria-hidden': 'true',
+  });
+
+  // --- Blobs decorativos (respeitam o radius porque o parent faz overflow-hidden) ---
   const blobA = el('div', {
     class:
-      'pointer-events-none absolute top-0 right-0 w-56 h-56 bg-primary rounded-full mix-blend-screen opacity-20 blur-3xl animate-float',
+      'pointer-events-none absolute -top-20 -right-20 w-56 h-56 rounded-full bg-primary/25 blur-3xl animate-float',
     'aria-hidden': 'true',
   });
   const blobB = el('div', {
     class:
-      'pointer-events-none absolute -bottom-12 -left-8 w-44 h-44 bg-primary-container rounded-full mix-blend-screen opacity-10 blur-3xl',
+      'pointer-events-none absolute -bottom-16 -left-12 w-48 h-48 rounded-full bg-primary-container/15 blur-3xl',
     'aria-hidden': 'true',
   });
 
@@ -102,14 +106,14 @@ export function TotalProfitCard(props: TotalProfitCardProps): HTMLElement {
     'span',
     {
       class:
-        'font-label-caps text-label-caps text-primary/90 uppercase tracking-[0.18em]',
+        'font-label-caps text-[11px] text-primary/90 uppercase tracking-[0.22em]',
     },
-    'Lucro Total Acumulado',
+    'Lucro Total',
   );
   const header = el(
     'div',
-    { class: 'flex items-center gap-sm relative z-10' },
-    [headerLabel],
+    { class: 'flex items-center justify-between relative z-10' },
+    [headerLabel, buildVariationChip(props.variation)],
   );
 
   // --- Valor principal ---
@@ -117,7 +121,7 @@ export function TotalProfitCard(props: TotalProfitCardProps): HTMLElement {
     'span',
     {
       class:
-        'font-display-lg text-[44px] md:text-[56px] text-white font-extrabold tracking-tight drop-shadow-[0_4px_24px_rgba(0,0,0,0.35)] leading-none',
+        'font-display-lg text-[48px] md:text-[64px] leading-[1.05] text-white font-extrabold tracking-tight drop-shadow-[0_4px_24px_rgba(0,0,0,0.35)]',
     },
     formatCurrency(props.total, 'AOA').replace(' AOA', ''),
   );
@@ -125,76 +129,21 @@ export function TotalProfitCard(props: TotalProfitCardProps): HTMLElement {
     'span',
     {
       class:
-        'font-label-caps text-[14px] text-primary/80 uppercase tracking-[0.18em] ml-2 align-middle',
+        'font-label-caps text-[13px] text-primary uppercase tracking-[0.2em] bg-primary/10 border border-primary/25 rounded-full px-2.5 py-1 ml-3 self-center',
     },
     'AOA',
   );
   const amountRow = el(
     'div',
-    { class: 'flex items-baseline gap-2 relative z-10' },
+    { class: 'flex items-end flex-wrap gap-x-1 relative z-10 mt-4' },
     [amountNumber, amountSuffix],
   );
 
-  // --- Chip de variação (opcional) ou subtítulo de contagem ---
-  const metaItems: HTMLElement[] = [];
-  if (typeof props.salesCount === 'number') {
-    metaItems.push(
-      el(
-        'div',
-        {
-          class:
-            'flex items-center gap-xs px-2.5 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm',
-        },
-        [
-          icon('receipt_long', 'text-[14px] text-on-surface-variant'),
-          el(
-            'span',
-            { class: 'font-label-caps text-[11px] text-on-surface-variant tracking-wider' },
-            `${props.salesCount} ${props.salesCount === 1 ? 'venda' : 'vendas'}`,
-          ),
-        ],
-      ),
-    );
-  }
-  if (props.variation && Number.isFinite(props.variation.pct)) {
-    const up = props.variation.pct >= 0;
-    metaItems.push(
-      el(
-        'div',
-        {
-          class:
-            'flex items-center gap-xs px-2.5 py-1 rounded-full backdrop-blur-sm border ' +
-            (up
-              ? 'bg-primary/15 border-primary/25 text-primary'
-              : 'bg-error-container/30 border-error/25 text-error'),
-        },
-        [
-          icon(up ? 'trending_up' : 'trending_down', 'text-[14px]'),
-          el(
-            'span',
-            {
-              class: 'font-data-mono text-[12px] font-bold tracking-tight',
-            },
-            formatVariation(props.variation.pct),
-          ),
-        ],
-      ),
-    );
-  }
-  const metaRow = metaItems.length
-    ? el('div', { class: 'flex items-center gap-sm relative z-10 mt-sm' }, metaItems)
-    : null;
-
-  // --- Seção ---
-  const children: (HTMLElement | null)[] = [
-    blobA,
-    blobB,
-    shimmer,
-    header,
-    amountRow,
-    metaRow,
-  ];
-
+  // --- Composição ---
+  // `isolate` cria um stacking context local que previne que o shimmer e
+  // os blobs interajam com elementos fora do card (incluindo a tela toda).
+  // `overflow-hidden` aplicado ao root (com rounded-3xl) é quem recorta
+  // efetivamente os blobs aos cantos arredondados.
   const card = el(
     'section',
     {
@@ -202,18 +151,16 @@ export function TotalProfitCard(props: TotalProfitCardProps): HTMLElement {
       'aria-live': 'polite',
       'aria-label': 'Lucro Total',
       class:
-        'relative overflow-hidden rounded-3xl p-lg md:p-xl ' +
-        'bg-gradient-to-br from-[#0b1f17] via-[#0e2a20] to-[#052a1d] ' +
+        'relative isolate overflow-hidden rounded-3xl p-lg md:p-xl ' +
+        'bg-surface-container-low ' +
         'border border-primary/20 ' +
-        'shadow-[0_24px_64px_-20px_rgba(16,185,129,0.35),0_8px_32px_rgba(0,0,0,0.4)] ' +
-        'backdrop-blur-xl animate-scale-in',
+        'shadow-[0_24px_64px_-20px_rgba(16,185,129,0.3),0_8px_32px_rgba(0,0,0,0.4)] ' +
+        'animate-scale-in',
     },
-    children.filter((c): c is HTMLElement => c !== null),
+    [bg, blobA, blobB, shimmer, header, amountRow],
   );
 
-  // Anima o número do `previousTotal` (ou 0) até `total`. Precisa ocorrer
-  // após o elemento existir; como o texto está em `amountNumber`, basta
-  // atualizá-lo via `textContent`.
+  // Anima o contador.
   const from = props.previousTotal ?? 0;
   animateCounter(from, props.total, 800, (value) => {
     const rounded = Math.round(value);
@@ -221,4 +168,32 @@ export function TotalProfitCard(props: TotalProfitCardProps): HTMLElement {
   });
 
   return card;
+}
+
+function buildVariationChip(
+  variation?: { pct: number; label?: string },
+): HTMLElement {
+  if (!variation || !Number.isFinite(variation.pct)) {
+    // Placeholder vazio para manter o justify-between equilibrado.
+    return el('span', { class: 'w-0 h-0' });
+  }
+  const up = variation.pct >= 0;
+  return el(
+    'div',
+    {
+      class:
+        'flex items-center gap-xs px-2.5 py-1 rounded-full backdrop-blur-sm border ' +
+        (up
+          ? 'bg-primary/15 border-primary/25 text-primary'
+          : 'bg-error-container/30 border-error/25 text-error'),
+    },
+    [
+      icon(up ? 'trending_up' : 'trending_down', 'text-[14px]'),
+      el(
+        'span',
+        { class: 'font-data-mono text-[12px] font-bold tracking-tight' },
+        formatVariation(variation.pct),
+      ),
+    ],
+  );
 }

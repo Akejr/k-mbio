@@ -57,41 +57,28 @@ export function DashboardView(
       const total = calcularLucroTotal(state.sales);
       const salesCount = state.sales.filter((s) => s.deletedAt === null).length;
 
-      const historyHeaderTitle = el(
-        'h3',
-        { class: 'font-headline-md text-[20px] text-on-surface font-bold' },
-        'Histórico',
-      );
-      const historyHeaderSubtitle = el(
-        'span',
-        {
-          class:
-            'font-label-caps text-[10px] text-on-surface-variant uppercase tracking-[0.15em]',
-        },
-        'Arraste para excluir',
-      );
       const historyHeader = el(
         'div',
-        { class: 'flex items-baseline justify-between' },
+        { class: 'flex items-center justify-between' },
         [
           el(
-            'div',
-            { class: 'flex flex-col gap-[2px]' },
-            [historyHeaderTitle, historyHeaderSubtitle],
+            'h3',
+            { class: 'font-headline-md text-[20px] text-on-surface font-bold' },
+            'Histórico',
           ),
           el(
             'div',
             {
               class:
-                'flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-high/60 border border-outline-variant/40',
+                'flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-high/60 border border-outline-variant/40',
             },
             [
-              icon('sort', 'text-[14px] text-on-surface-variant'),
+              icon('receipt_long', 'text-[14px] text-on-surface-variant'),
               el(
                 'span',
                 {
                   class:
-                    'font-data-mono text-[12px] text-on-surface-variant tracking-tight',
+                    'font-data-mono text-[12px] text-on-surface-variant tracking-tight font-semibold',
                 },
                 String(salesCount),
               ),
@@ -133,7 +120,7 @@ export function DashboardView(
           class:
             'pt-topbar-safe px-margin-mobile max-w-4xl mx-auto flex flex-col gap-lg pb-[140px]',
         },
-        [TotalProfitCard({ total, salesCount, previousTotal }), historySection],
+        [TotalProfitCard({ total, previousTotal }), historySection],
       );
 
       root.innerHTML = '';

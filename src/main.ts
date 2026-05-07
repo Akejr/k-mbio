@@ -46,11 +46,61 @@ import { initRouter } from './app/router';
 import { loadAllSales } from './app/actions';
 import { createSalesRepository } from './infra/db/factory';
 import { BottomNav } from './ui/components/BottomNav';
-import { Fab } from './ui/components/Fab';
 import { mountSnackbar } from './ui/components/Snackbar';
 import { DashboardView } from './ui/views/DashboardView';
 import { RegisterView } from './ui/views/RegisterView';
 import { HistoryView } from './ui/views/HistoryView';
+
+/**
+ * Bloqueia gestos de zoom em iOS Safari e Android.
+ *
+ * Apesar de `<meta viewport user-scalable=no>` no `index.html`, o iOS Safari
+ * ignora essa diretiva desde iOS 10 e permite pinch-to-zoom e double-tap
+ * zoom em páginas web. Como o Kâmbio é um app com tipografia fixa (sem
+ * conteúdo longo de leitura), o zoom acidental ao tocar num `<input>`
+ * numérico é disruptivo — o usuário perde o contexto do formulário.
+ *
+ * Interceptamos:
+ *   - `gesturestart` (iOS): dispara antes de um pinch, cancelar desabilita.
+ *   - `dblclick`: bloqueia double-tap zoom.
+ *   - `touchmove` com mais de um toque: cancela pinch residual no Android.
+ *
+ * Observação: em PWA instalado (`display: standalone`), o iOS já desabilita
+ * zoom automaticamente. Este bloqueio extra cobre o Safari web (antes da
+ * instalação) e Android Chrome.
+ */
+function bloquearZoom(): void {
+  document.addEventListener(
+    'gesturestart',
+    (ev) => {
+      ev.preventDefault();
+    },
+    { passive: false },
+  );
+  document.addEventListener(
+    'gesturechange',
+    (ev) => {
+      ev.preventDefault();
+    },
+    { passive: false },
+  );
+  document.addEventListener(
+    'dblclick',
+    (ev) => {
+      ev.preventDefault();
+    },
+    { passive: false },
+  );
+  document.addEventListener(
+    'touchmove',
+    (ev) => {
+      if (ev.touches.length > 1) {
+        ev.preventDefault();
+      }
+    },
+    { passive: false },
+  );
+}
 
 /**
  * Renderiza uma mensagem de erro fatal quando nenhum backend de
@@ -80,6 +130,8 @@ function renderFatalError(appRoot: HTMLElement, message: string): void {
  * `await` na resolução do repositório sem _top-level await_.
  */
 async function bootstrap(): Promise<void> {
+  bloquearZoom();
+
   const appRoot = document.getElementById('app');
   if (appRoot === null) {
     // Sem `#app` não há como montar a aplicação; falha ruidosa em dev.
@@ -104,8 +156,10 @@ async function bootstrap(): Promise<void> {
 
   // --- Singletons globais (fora de #app para não serem limpos pelo
   //     router ao trocar de view) ---
+  //
+  // O FAB flutuante foi absorvido pelo centro da BottomNav (ver
+  // `./ui/components/BottomNav.ts`) — não há mais botão separado aqui.
   document.body.appendChild(BottomNav());
-  document.body.appendChild(Fab());
   mountSnackbar();
 
   // --- Router ---

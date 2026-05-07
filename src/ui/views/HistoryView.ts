@@ -151,14 +151,6 @@ export function HistoryView(
             { class: 'font-headline-md text-[20px] text-on-surface font-bold' },
             'Histórico de Vendas',
           ),
-          el(
-            'span',
-            {
-              class:
-                'font-label-caps text-[10px] text-on-surface-variant uppercase tracking-[0.15em]',
-            },
-            'Arraste para excluir',
-          ),
         ],
       );
 
