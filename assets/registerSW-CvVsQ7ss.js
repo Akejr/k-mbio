@@ -1,0 +1,3 @@
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/virtual_pwa-register-DiB2NobV.js","assets/index-X7Mjsx6h.js","assets/index-DLeMAELx.css"])))=>i.map(i=>d[i]);
+import{t as e}from"./index-X7Mjsx6h.js";async function t(){if(!(typeof window>`u`||!(`serviceWorker`in navigator)))try{let t=(await e(()=>import(`./virtual_pwa-register-DiB2NobV.js`),__vite__mapDeps([0,1,2]))).registerSW;if(typeof t!=`function`)return;t({immediate:!0,onRegisterError(e){console.warn(`[pwa] falha ao registrar Service Worker:`,e)}})}catch(e){console.warn(`[pwa] Service Worker não registrado:`,e)}}export{t as registerServiceWorker};
+//# sourceMappingURL=registerSW-CvVsQ7ss.js.map
