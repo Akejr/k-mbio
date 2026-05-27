@@ -1,12 +1,11 @@
 /**
- * `DashboardView` — tela inicial com redesign moderno + swipe-to-delete.
+ * `DashboardView` — tela inicial com seleção por mês.
  *
- * - Hero do Lucro_Total com contador animado.
- * - Itens do histórico via `SwipeableSaleItem` — arrastar lateralmente
- *   remove a venda (soft delete) e mostra snackbar com "Desfazer".
+ * - Hero do Lucro_Total exibe **apenas** o lucro do mês selecionado.
+ * - Itens do histórico filtrados pelo mês.
+ * - `MonthNavigator` acima do card permite alternar entre meses.
  *
- * Cobre Req 2.1–2.4, 3.1, 3.2, 3.3, 3.5, 10.3 (exclusão com confirmação
- * implícita via snackbar de desfazer).
+ * Cobre Req 2.1–2.4, 3.1, 3.2, 3.3, 3.5, 10.3.
  */
 
 import type { Store } from '../../app/store';
@@ -15,9 +14,15 @@ import type { Mount } from '../../app/router';
 import type { SalesRepository } from '../../infra/salesRepository';
 import { calcularLucroTotal } from '../../domain/profit';
 import { deleteSale, restoreSale } from '../../app/actions';
+import {
+  getSelectedMonth,
+  subscribeMonth,
+  timestampBelongsTo,
+} from '../../app/monthSelector';
 import { el, icon } from '../components/dom';
 import { TopAppBar } from '../components/TopAppBar';
 import { TotalProfitCard } from '../components/TotalProfitCard';
+import { MonthNavigator } from '../components/MonthNavigator';
 import { SwipeableSaleItem } from '../components/SwipeableSaleItem';
 import { EmptyState } from '../components/EmptyState';
 import { showSnackbar } from '../components/Snackbar';
@@ -54,8 +59,12 @@ export function DashboardView(
 
     const render = (): void => {
       const state = store.get();
-      const total = calcularLucroTotal(state.sales);
-      const salesCount = state.sales.filter((s) => s.deletedAt === null).length;
+      const selectedMonth = getSelectedMonth();
+      const salesOfMonth = state.sales.filter((s) =>
+        timestampBelongsTo(s.createdAt, selectedMonth),
+      );
+      const total = calcularLucroTotal(salesOfMonth);
+      const salesCount = salesOfMonth.filter((s) => s.deletedAt === null).length;
 
       const historyHeader = el(
         'div',
@@ -88,13 +97,17 @@ export function DashboardView(
       );
 
       let historyBody: HTMLElement;
-      if (state.sales.length === 0) {
-        historyBody = EmptyState();
+      if (salesOfMonth.length === 0) {
+        historyBody = EmptyState({
+          title: 'Nenhuma venda neste mês',
+          message:
+            'Use as setas acima para navegar entre meses, ou cadastre uma nova venda.',
+        });
       } else {
         historyBody = el(
           'div',
           { class: 'flex flex-col gap-sm', role: 'list' },
-          state.sales.map((sale, idx) => {
+          salesOfMonth.map((sale, idx) => {
             const item = SwipeableSaleItem({
               sale,
               onDelete: (s) => {
@@ -118,9 +131,13 @@ export function DashboardView(
         'main',
         {
           class:
-            'pt-topbar-safe px-margin-mobile max-w-4xl mx-auto flex flex-col gap-lg pb-[140px]',
+            'pt-topbar-safe px-margin-mobile max-w-4xl mx-auto flex flex-col gap-md pb-[140px]',
         },
-        [TotalProfitCard({ total, previousTotal }), historySection],
+        [
+          MonthNavigator(),
+          TotalProfitCard({ total, previousTotal }),
+          historySection,
+        ],
       );
 
       root.innerHTML = '';
@@ -130,10 +147,12 @@ export function DashboardView(
       previousTotal = total;
     };
 
-    const unsub = store.subscribe(render);
+    const unsubStore = store.subscribe(render);
+    const unsubMonth = subscribeMonth(render);
     render();
     return () => {
-      unsub();
+      unsubStore();
+      unsubMonth();
     };
   };
 }

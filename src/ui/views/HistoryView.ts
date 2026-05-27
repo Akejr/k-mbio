@@ -1,10 +1,8 @@
 /**
- * `HistoryView` — tela dedicada ao Histórico_de_Vendas com swipe-to-delete.
+ * `HistoryView` — tela dedicada com seleção por mês.
  *
- * Mesmo padrão da DashboardView mas sem o card de Lucro_Total; traz
- * banner-resumo minimalista no topo. Itens são `SwipeableSaleItem`.
- *
- * Cobre Req 3.1–3.7, 10.3.
+ * Banner topo mostra contagem e lucro do mês selecionado. MonthNavigator
+ * acima do banner permite alternar.
  */
 
 import type { Store } from '../../app/store';
@@ -14,8 +12,14 @@ import type { SalesRepository } from '../../infra/salesRepository';
 import { calcularLucroTotal } from '../../domain/profit';
 import { formatCurrency } from '../../domain/formatter';
 import { deleteSale, restoreSale } from '../../app/actions';
+import {
+  getSelectedMonth,
+  subscribeMonth,
+  timestampBelongsTo,
+} from '../../app/monthSelector';
 import { el, icon } from '../components/dom';
 import { TopAppBar } from '../components/TopAppBar';
+import { MonthNavigator } from '../components/MonthNavigator';
 import { SwipeableSaleItem } from '../components/SwipeableSaleItem';
 import { EmptyState } from '../components/EmptyState';
 import { showSnackbar } from '../components/Snackbar';
@@ -50,8 +54,12 @@ export function HistoryView(
 
     const render = (): void => {
       const state = store.get();
-      const count = state.sales.filter((s) => s.deletedAt === null).length;
-      const total = calcularLucroTotal(state.sales);
+      const selectedMonth = getSelectedMonth();
+      const salesOfMonth = state.sales.filter((s) =>
+        timestampBelongsTo(s.createdAt, selectedMonth),
+      );
+      const count = salesOfMonth.filter((s) => s.deletedAt === null).length;
+      const total = calcularLucroTotal(salesOfMonth);
 
       const banner = el(
         'section',
@@ -82,7 +90,7 @@ export function HistoryView(
                       class:
                         'font-label-caps text-[10px] text-on-surface-variant uppercase tracking-[0.15em]',
                     },
-                    'Total de vendas',
+                    'Vendas no mês',
                   ),
                   el(
                     'span',
@@ -106,13 +114,13 @@ export function HistoryView(
                   class:
                     'font-label-caps text-[10px] text-on-surface-variant uppercase tracking-[0.15em]',
                 },
-                'Lucro acumulado',
+                'Lucro do mês',
               ),
               el(
                 'span',
                 {
                   class:
-                    'font-data-mono text-[16px] text-primary font-bold tracking-tight',
+                    'privacy-target font-data-mono text-[16px] text-primary font-bold tracking-tight',
                 },
                 formatCurrency(total, 'AOA'),
               ),
@@ -122,13 +130,17 @@ export function HistoryView(
       );
 
       let body: HTMLElement;
-      if (state.sales.length === 0) {
-        body = EmptyState();
+      if (salesOfMonth.length === 0) {
+        body = EmptyState({
+          title: 'Nenhuma venda neste mês',
+          message:
+            'Use as setas acima para navegar entre meses, ou cadastre uma nova venda.',
+        });
       } else {
         body = el(
           'div',
           { class: 'flex flex-col gap-sm', role: 'list' },
-          state.sales.map((sale, idx) => {
+          salesOfMonth.map((sale, idx) => {
             const item = SwipeableSaleItem({
               sale,
               onDelete: (s) => {
@@ -164,9 +176,9 @@ export function HistoryView(
         'main',
         {
           class:
-            'pt-topbar-safe px-margin-mobile max-w-4xl mx-auto flex flex-col gap-lg pb-[140px]',
+            'pt-topbar-safe px-margin-mobile max-w-4xl mx-auto flex flex-col gap-md pb-[140px]',
         },
-        [banner, section],
+        [MonthNavigator(), banner, section],
       );
 
       root.innerHTML = '';
@@ -174,10 +186,12 @@ export function HistoryView(
       root.appendChild(main);
     };
 
-    const unsub = store.subscribe(render);
+    const unsubStore = store.subscribe(render);
+    const unsubMonth = subscribeMonth(render);
     render();
     return () => {
-      unsub();
+      unsubStore();
+      unsubMonth();
     };
   };
 }
