@@ -47,6 +47,9 @@ import { loadAllSales } from './app/actions';
 import { createSalesRepository } from './infra/db/factory';
 import { BottomNav } from './ui/components/BottomNav';
 import { mountSnackbar } from './ui/components/Snackbar';
+import { setSettingsStore } from './ui/components/SettingsButton';
+import { syncToGist } from './infra/gistSync';
+import { isSyncConfigured } from './app/settings';
 import { DashboardView } from './ui/views/DashboardView';
 import { RegisterView } from './ui/views/RegisterView';
 import { HistoryView } from './ui/views/HistoryView';
@@ -139,6 +142,22 @@ async function bootstrap(): Promise<void> {
   }
 
   const store = createStore(initialState);
+  setSettingsStore(store);
+
+  // Sincronização com o Gist (widget): dispara, com debounce, sempre que a
+  // lista de vendas muda — desde que as credenciais estejam configuradas.
+  // Debounce evita um PATCH por tecla durante operações rápidas em sequência.
+  let syncTimer: number | null = null;
+  let lastSyncedSalesRef: unknown = null;
+  store.subscribe((state) => {
+    if (!isSyncConfigured()) return;
+    if (state.sales === lastSyncedSalesRef) return;
+    lastSyncedSalesRef = state.sales;
+    if (syncTimer !== null) window.clearTimeout(syncTimer);
+    syncTimer = window.setTimeout(() => {
+      void syncToGist(store.get().sales);
+    }, 1500);
+  });
 
   // --- Repositório ---
   let repo;

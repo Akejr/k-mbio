@@ -20,6 +20,7 @@
 import { navigate } from '../../app/router';
 import { el, icon } from './dom';
 import { PrivacyToggle } from './PrivacyToggle';
+import { SettingsButton } from './SettingsButton';
 
 export interface TopAppBarProps {
   variant?: 'default' | 'back';
@@ -76,9 +77,12 @@ export function TopAppBar(props: TopAppBarProps = {}): HTMLElement {
     leftSlot ? [leftSlot, titleGroup] : [titleGroup],
   );
 
-  // Botão de privacidade à direita: esconde valores monetários com blur.
-  // Substitui o chip decorativo anterior — funcionalidade real > enfeite.
-  const rightSlot = PrivacyToggle();
+  // Ações à direita: privacidade (blur) + configurações (widget/sync).
+  const rightSlot = el(
+    'div',
+    { class: 'flex items-center gap-2' },
+    [PrivacyToggle(), SettingsButton()],
+  );
 
   return el(
     'header',
